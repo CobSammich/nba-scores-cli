@@ -8,8 +8,9 @@ mod team;
 use team::Team;
 
 // TODO:
-// * function that tells you if a game has started yet or not -- given a game_block?
 // * Major refactoring of form_game function
+// * down side of making team.rs public??
+// * How to display and format game leaders info
 // * Team name colors
 
 enum TimeZone {
@@ -75,12 +76,8 @@ fn form_game(game_block: select::node::Node) -> Game {
         .collect::<Vec<String>>();
 
     // Done parsing html
-    let away_team_name = teams.get(0).expect("No team names in this vector");
-    let home_team_name = teams.get(1).expect("No team names in this vector");
-
-    // store the stat leader names and the values of those stats
-    let mut stat_leader_names: Vec<String> = Vec::new();
-    let mut stat_leader_values: Vec<u32> = Vec::new();
+    let away_team_name = String::from(teams.get(0).expect("No team names in this vector"));
+    let home_team_name = String::from(teams.get(1).expect("No team names in this vector"));
 
     // get each teams scores:
     // Critical design choice here: We decide that if there are no scores found (there are 10
@@ -101,7 +98,7 @@ fn form_game(game_block: select::node::Node) -> Game {
             .map(|tag| tag.text())
             .collect::<Vec<String>>();
 
-        // TODO: FUNCTIONALIZE
+        // TODO/refactor: FUNCTIONALIZE
         //game_time = get_game_start_time(game_block);
         let game_time = match MY_TIMEZONE {
             TimeZone::Pacific => String::from(time_zones
@@ -147,7 +144,14 @@ fn form_game(game_block: select::node::Node) -> Game {
         .parse::<u32>()
         .unwrap();
 
+    // store the stat leader names and the values of those stats
+    let mut home_leader_names: Vec<String> = Vec::new();
+    let mut away_leader_names: Vec<String> = Vec::new();
+    let mut home_leader_values: Vec<u32> = Vec::new();
+    let mut away_leader_values: Vec<u32> = Vec::new();
+
     // there will be 6 values in this
+    let mut counter = 0;
     for val in stat_leaders_raw {
         let val_as_str = String::from(val);
         let val_split_by_whitespace = val_as_str.split_whitespace().collect::<Vec<&str>>();
@@ -159,57 +163,27 @@ fn form_game(game_block: select::node::Node) -> Game {
             .expect("Can't retrieve last value in array")
             .parse::<u32>()
             .unwrap();
-        stat_leader_names.push(player_name.clone());
-        stat_leader_values.push(number);
+        if counter % 2 == 1 {
+            // home team values
+            home_leader_names.push(player_name.clone());
+            home_leader_values.push(number);
+        }
+        else {
+            // away team values
+            away_leader_names.push(player_name.clone());
+            away_leader_values.push(number);
+        }
+        counter += 1;
         // stat_leaders_raw is freed
     }
 
     // Instantiate teams from the values we just scraped
-    let home_team = Team {
-        name: String::from(home_team_name),
-        score: home_score,
-        points_leader: String::from(stat_leader_names
-                                    .get(1)
-                                    .expect("Could not read game leader")),
-        points_leader_value: *stat_leader_values
-            .get(1)
-            .expect("Could not read game leader"),
-        rebounds_leader: String::from(stat_leader_names
-                                      .get(3)
-                                      .expect("Could not read game leader")),
-        rebounds_leader_value: *stat_leader_values
-            .get(3)
-            .expect("Could not read game leader"),
-        assists_leader: String::from(stat_leader_names
-                                     .get(5)
-                                     .expect("Could not read game leader")),
-        assists_leader_value: *stat_leader_values
-            .get(5)
-            .expect("Could not read game leader"),
-    };
-
-    let away_team = Team {
-        name: String::from(away_team_name),
-        score: away_score,
-        points_leader: String::from(stat_leader_names
-                                    .get(0)
-                                    .expect("Could not read game leader")),
-        points_leader_value: *stat_leader_values
-            .get(0)
-            .expect("Could not read game leader"),
-        rebounds_leader: String::from(stat_leader_names
-                                      .get(2)
-                                      .expect("Could not read game leader")),
-        rebounds_leader_value: *stat_leader_values
-            .get(2)
-            .expect("Could not read game leader"),
-        assists_leader: String::from(stat_leader_names
-                                     .get(4)
-                                     .expect("Could not read game leader")),
-        assists_leader_value: *stat_leader_values
-            .get(4)
-            .expect("Could not read game leader"),
-    };
+    // TODO/refactor: make this a function where you pass in name, score, and vector of team leaders of
+    // length = 3
+    let home_team = Team::from_leader_vector(home_team_name, home_score, home_leader_names,
+                                             home_leader_values);
+    let away_team = Team::from_leader_vector(away_team_name, away_score, away_leader_names,
+                                             away_leader_values);
 
     let game = Game {
         has_started: true,
@@ -243,6 +217,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // given a game block, form two Teams and a Game
             // parse the current game block for game info
             let game: Game = form_game(game_block);
+            println!("{:?}", game.home_team);
+            println!("{:?}", game.away_team);
 
             // print current game info to terminal
             game.display();
