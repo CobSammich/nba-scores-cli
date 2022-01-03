@@ -9,7 +9,8 @@ use team::Team;
 
 // TODO:
 // * function that tells you if a game has started yet or not -- given a game_block?
-// * struct Game: will hold all information of a game block
+// * Major refactoring of form_game function
+// * Team name colors
 
 enum TimeZone {
     // Defines different timezones (US only for now)
@@ -26,6 +27,18 @@ struct Game {
     game_time: String,
 }
 
+impl Game {
+    fn display(&self) {
+        println!("{}", format!("{:^16}@{:^16}{:^3} - {:^3}\t{:^9}",
+                         self.away_team.name, self.home_team.name,
+                         self.away_team.score, self.home_team.score,
+                         self.game_time
+                         )
+                 );
+        // if game has started, then print the stat leaders
+    }
+}
+
 
 // Parameters set by some config file
 static MY_TIMEZONE: TimeZone = TimeZone::Eastern;
@@ -35,7 +48,7 @@ fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
 }
 
-fn form_teams(game_block: select::node::Node) -> (Team, Team) {
+fn form_game(game_block: select::node::Node) -> Game {
     // Does all the html parsing to make teams
     // returns (home_team, away_team)
 
@@ -82,8 +95,46 @@ fn form_teams(game_block: select::node::Node) -> (Team, Team) {
             name: String::from(away_team_name),
             ..Team::default()
         };
-        return (home_team, away_team);
+        // find game start time based on Timezone
+        let time_zones: Vec<String> = game_block
+            .find(Class("shsTimezone"))
+            .map(|tag| tag.text())
+            .collect::<Vec<String>>();
+
+        // TODO: FUNCTIONALIZE
+        //game_time = get_game_start_time(game_block);
+        let game_time = match MY_TIMEZONE {
+            TimeZone::Pacific => String::from(time_zones
+                                              .get(0)
+                                              .expect("Could not read time zone")),
+            TimeZone::Mountain => String::from(time_zones
+                                               .get(1)
+                                               .expect("Could not read time zone")),
+            TimeZone::Central => String::from(time_zones
+                                              .get(2)
+                                              .expect("Could not read time zone")),
+            TimeZone::Eastern => String::from(time_zones
+                                              .get(3)
+                                              .expect("Could not read time zone")),
+            // NaN case
+            _ => String::from(""),
+        };
+
+        let game = Game {
+            has_started: false,
+            away_team: away_team,
+            home_team: home_team,
+            game_time: game_time,
+        };
+
+        return game;
     }
+
+    // scrape gametime -- this is unfortunately a different html tag if the game hasn't started yet
+    let game_time = game_block.find(Class("shsTeamCol"))
+        .next()
+        .unwrap()
+        .text();
 
     // there are scores shown -- continue
     let n_cols = scores.len() / 3;
@@ -160,90 +211,44 @@ fn form_teams(game_block: select::node::Node) -> (Team, Team) {
             .expect("Could not read game leader"),
     };
 
-    return (home_team, away_team);
+    let game = Game {
+        has_started: true,
+        away_team: away_team,
+        home_team: home_team,
+        game_time: game_time,
+    };
+
+    return game;
+}
+
+fn print_header() {
+    println!("{}", format!("{:^16} {:^16}{:^10}\t{:^10}", "Away", "Home", "Score", "Status"));
+    println!("{}", format!("{:^16} {:^16}{:^10}\t{:^10}", "----", "----", "-----", "------"));
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //let url = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?meta=true");
-    let url = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=20220103");
+    let url = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=20220102");
     let resp = reqwest::get(url).await?;
     assert!(resp.status().is_success());
     let document = Document::from(&*resp.text().await?);
 
-    let mut n_games = 0;
+    print_header();
+
+    //let mut n_games = 0;
     for row in document.find(Class("shsScoreboardRow")) {
         // there are two games per row
         for game_block in row.find(Class("shsScoreboardCol")) {
             // given a game block, form two Teams and a Game
+            // parse the current game block for game info
+            let game: Game = form_game(game_block);
 
-            let (home_team, away_team) = form_teams(game_block);
-            println!("{:?}", home_team);
-            println!("{:?}", away_team);
-
+            // print current game info to terminal
+            game.display();
 
             //print_type_of(&game_block);
-            // find home and away team names
-            //let game_time: String;
-            //let away_score: u32;
-            //let home_score: u32;
-            // check if game has started -- if it hasn't the quarter number header will not be
-            // present
-            //if scores.len() == 10 {
-                // handle when the game has not yet started -- initialize scores to zero and scrape
-                // game start time
-                //println!("Game has not started");
-                //away_score = 0;
-                //home_score = 0;
-                //let time_zones: Vec<String> = game_block
-                    //.find(Class("shsTimezone"))
-                    //.map(|tag| tag.text())
-                    //.collect::<Vec<String>>();
-
-                //game_time = get_game_start_time(game_block);
-                //game_time = match MY_TIMEZONE {
-                    //TimeZone::Pacific => String::from(time_zones
-                                                      //.get(0)
-                                                      //.expect("Could not read time zone")),
-                    //TimeZone::Mountain => String::from(time_zones
-                                                       //.get(1)
-                                                       //.expect("Could not read time zone")),
-                    //TimeZone::Central => String::from(time_zones
-                                                      //.get(2)
-                                                      //.expect("Could not read time zone")),
-                    //TimeZone::Eastern => String::from(time_zones
-                                                      //.get(3)
-                                                      //.expect("Could not read time zone")),
-                    // NaN case
-                    //_ => String::from(""),
-                //};
-            //}
-            //else {
-                //// if game goes into OT, they tack on a score column: solution is to find the
-                //// number of columns and index with that
-                //let n_cols = scores.len() / 3;
-                //away_score = scores.get(n_cols * 2 - 1)
-                    //.expect("Could not get away team's score")
-                    //.parse::<u32>()
-                    //.unwrap();
-                //home_score = scores.get(n_cols * 3 - 1)
-                    //.expect("Could not get home team's score")
-                    //.parse::<u32>()
-                    //.unwrap();
-                //game_time = game_block.find(Class("shsTeamCol"))
-                    //.next()
-                    //.unwrap()
-                    //.text();
-            //}
-
-            //println!("{} @ {}", away_team, home_team);
-            //println!("{} - {}", away_score, home_score);
-            //println!("{}", game_time);
-            //println!("");
-            //n_games += 1;
         }
     }
-    //println!("{} NBA games today.", n_games);
-
     return Ok(());
 }
