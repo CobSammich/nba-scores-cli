@@ -2,6 +2,7 @@
 extern crate reqwest;
 use select::document::Document;
 use select::predicate::{Attr, Class, Name, Predicate};
+use chrono;
 
 // internal packages
 mod team;
@@ -10,8 +11,17 @@ use team::Team;
 // TODO:
 // * Major refactoring of form_game function
 // * down side of making team.rs public??
+// * Implement Scraping module that scrapes the relevant information from the site
 // * How to display and format game leaders info
 // * Team name colors
+// * command line arguments
+//      * today to show today's schedules
+//      * tomorrow to show tomorrow's schedules
+//      * yesterday to show yesterday's schedules
+// * Change all array accesses from .expect to a match statement checking for Ok or Err
+//      - See chapter 9.2
+//      - JK maybe not?
+
 
 enum TimeZone {
     // Defines different timezones (US only for now)
@@ -82,6 +92,7 @@ fn form_game(game_block: select::node::Node) -> Game {
     // get each teams scores:
     // Critical design choice here: We decide that if there are no scores found (there are 10
     // whitespace regions), then we return just the names of the teams
+    // TODO/refactor: functionalize this
     if scores.len() == 10 {
         //let away_team = Team::default(away_team_name);
         let home_team = Team {
@@ -178,8 +189,6 @@ fn form_game(game_block: select::node::Node) -> Game {
     }
 
     // Instantiate teams from the values we just scraped
-    // TODO/refactor: make this a function where you pass in name, score, and vector of team leaders of
-    // length = 3
     let home_team = Team::from_leader_vector(home_team_name, home_score, home_leader_names,
                                              home_leader_values);
     let away_team = Team::from_leader_vector(away_team_name, away_score, away_leader_names,
@@ -200,10 +209,28 @@ fn print_header() {
     println!("{}", format!("{:^16} {:^16}{:^10}\t{:^10}", "----", "----", "-----", "------"));
 }
 
+fn get_current_date() -> String {
+    // Returns String in the form YYYYMMDD
+
+    // get current time
+    let current_time = chrono::offset::Local::now().to_string();
+
+    // Process the string to get the info we want
+    // first line filters to YYYY-MM-DD
+    // second line makes it a vector with ["YYYY", "MM", "DD"]
+    return current_time.split_whitespace().collect::<Vec<&str>>()[0]
+        .split('-').collect::<Vec<&str>>()[0..3]
+        .join("");
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let current_date = get_current_date();
+    let url_base = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=");
+    //let url = format!("{}{}", )
+    let url = url_base + &current_date;
     //let url = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?meta=true");
-    let url = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=20220102");
+    //let url = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=20220108");
     let resp = reqwest::get(url).await?;
     assert!(resp.status().is_success());
     let document = Document::from(&*resp.text().await?);
@@ -217,8 +244,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // given a game block, form two Teams and a Game
             // parse the current game block for game info
             let game: Game = form_game(game_block);
-            println!("{:?}", game.home_team);
-            println!("{:?}", game.away_team);
+            //println!("{:?}", game.home_team);
+            //println!("{:?}", game.away_team);
 
             // print current game info to terminal
             game.display();
