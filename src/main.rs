@@ -3,6 +3,7 @@ extern crate reqwest;
 use select::document::Document;
 use select::predicate::{Attr, Class, Name, Predicate};
 use chrono;
+use clap::Parser;
 
 // internal packages
 mod team;
@@ -14,13 +15,19 @@ use team::Team;
 // * Implement Scraping module that scrapes the relevant information from the site
 // * How to display and format game leaders info
 // * Team name colors
-// * command line arguments
-//      * today to show today's schedules
-//      * tomorrow to show tomorrow's schedules
-//      * yesterday to show yesterday's schedules
-// * Change all array accesses from .expect to a match statement checking for Ok or Err
-//      - See chapter 9.2
-//      - JK maybe not?
+// * A class that handles making dates look human readable and interprettable to the program
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// Date of games to retrieve. must be in YYYYMMDD format.
+    /// Shortcuts:
+    /// t: today
+    /// T: tomorrow
+    /// y: yesterday
+    #[clap(short, long, default_value = "t")]
+    date: String,
+}
 
 
 enum TimeZone {
@@ -209,35 +216,67 @@ fn print_header() {
     println!("{}", format!("{:^16} {:^16}{:^10}\t{:^10}", "----", "----", "-----", "------"));
 }
 
-fn get_current_date() -> String {
-    // Returns String in the form YYYYMMDD
-
-    // get current time
-    let current_time = chrono::offset::Local::now().to_string();
-
-    // Process the string to get the info we want
-    // first line filters to YYYY-MM-DD
-    // second line makes it a vector with ["YYYY", "MM", "DD"]
-    return current_time.split_whitespace().collect::<Vec<&str>>()[0]
-        .split('-').collect::<Vec<&str>>()[0..3]
-        .join("");
+// --------------------------------------
+fn format_date(date: String) -> String {
+    // Given a String in the form YYYY-MM-DD, Returns String in the form YYYYMMDD
+    return date.split('-').collect::<Vec<&str>>()[0..3].join("");
 }
+
+// TODO: return Result??
+fn extract_date_argument(date: &String) -> String {
+    // retrieve current date -- chrono makes getting surrounding days EASY
+    let current_date = chrono::offset::Local::now().date();
+
+    // check for shortcut arguments -- use current date
+    if date == "t" {
+        return format_date(current_date.to_string());
+    }
+    else if date == "T" {
+        return format_date(current_date.succ().to_string());
+    }
+    else if date == "y" {
+        return format_date(current_date.pred().to_string());
+    }
+    // TODO check if in usable format
+    if !date_format_usable(&date) {
+        // TODO if not supplied with valid date -- panic!
+        // How do we decide what date formats we can use?
+
+    }
+
+    println!("Could not understand date given.. showing Today's scores.");
+    return extract_date_argument(&String::from("t"));
+}
+
+// Should this be Result?
+fn date_format_usable(date: &String) -> bool {
+    // trim off extra characters, if any
+    if date.len() != 8 {
+        return false;
+    }
+    println!("{}", &date);
+
+    return false;
+}
+// --------------------------------------
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let current_date = get_current_date();
+    // Parse command line arguments
+    let args = Args::parse();
+    // handle date
+    let date = extract_date_argument(&args.date);
+    // form the url to look for based on the date.
     let url_base = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=");
-    //let url = format!("{}{}", )
-    let url = url_base + &current_date;
-    //let url = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?meta=true");
-    //let url = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=20220108");
+    let url = url_base + &date;
+
+    // Get the webpage
     let resp = reqwest::get(url).await?;
     assert!(resp.status().is_success());
     let document = Document::from(&*resp.text().await?);
 
     print_header();
 
-    //let mut n_games = 0;
     for row in document.find(Class("shsScoreboardRow")) {
         // there are two games per row
         for game_block in row.find(Class("shsScoreboardCol")) {
@@ -249,8 +288,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // print current game info to terminal
             game.display();
-
-            //print_type_of(&game_block);
         }
     }
     return Ok(());
