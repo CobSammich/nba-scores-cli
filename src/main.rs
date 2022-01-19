@@ -146,6 +146,7 @@ fn form_game(game_block: select::node::Node) -> Game {
     }
 
     // scrape gametime -- this is unfortunately a different html tag if the game hasn't started yet
+
     let game_time = game_block.find(Class("shsTeamCol"))
         .next()
         .unwrap()
@@ -227,16 +228,16 @@ fn extract_date_argument(date: &String) -> String {
     // retrieve current date -- chrono makes getting surrounding days EASY
     let current_date = chrono::offset::Local::now().date();
 
-    // check for shortcut arguments -- use current date
-    if date == "t" {
-        return format_date(current_date.to_string());
-    }
-    else if date == "T" {
-        return format_date(current_date.succ().to_string());
-    }
-    else if date == "y" {
-        return format_date(current_date.pred().to_string());
-    }
+    match date.as_str() {
+        // check for shortcut arguments -- use current date
+        "t" => return format_date(current_date.to_string()),
+        "T" => return format_date(current_date.succ().to_string()),
+        "y" => return format_date(current_date.pred().to_string()),
+        // TODO: handle the different date formats here by passing them into conversion function
+        // If the string given is a usable date, panic!
+        _ => panic!("Please give a recognizable date format. The formats recognized are \
+                    YYYYMMDD, ..."),
+    };
     // TODO check if in usable format
     if !date_format_usable(&date) {
         // TODO if not supplied with valid date -- panic!
