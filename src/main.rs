@@ -131,15 +131,13 @@ fn form_game(game_block: select::node::Node) -> Game {
             TimeZone::Eastern => String::from(time_zones
                                               .get(3)
                                               .expect("Could not read time zone")),
-            // NaN case
-            _ => String::from(""),
         };
 
         let game = Game {
             has_started: false,
-            away_team: away_team,
-            home_team: home_team,
-            game_time: game_time,
+            away_team,
+            home_team,
+            game_time,
         };
 
         return game;
@@ -204,9 +202,9 @@ fn form_game(game_block: select::node::Node) -> Game {
 
     let game = Game {
         has_started: true,
-        away_team: away_team,
-        home_team: home_team,
-        game_time: game_time,
+        away_team,
+        home_team,
+        game_time,
     };
 
     return game;
@@ -224,6 +222,7 @@ fn format_date(date: String) -> String {
 }
 
 // TODO: return Result??
+/// Parse date argument and return the given date in YYYYMMDD format
 fn extract_date_argument(date: &String) -> String {
     // retrieve current date -- chrono makes getting surrounding days EASY
     let current_date = chrono::offset::Local::now().date();
@@ -239,14 +238,14 @@ fn extract_date_argument(date: &String) -> String {
                     YYYYMMDD, ..."),
     };
     // TODO check if in usable format
-    if !date_format_usable(&date) {
+    //if !date_format_usable(&date) {
         // TODO if not supplied with valid date -- panic!
         // How do we decide what date formats we can use?
 
-    }
+    //}
 
-    println!("Could not understand date given.. showing Today's scores.");
-    return extract_date_argument(&String::from("t"));
+    //println!("Could not understand date given.. showing Today's scores.");
+    //return extract_date_argument(&String::from("t"));
 }
 
 // Should this be Result?

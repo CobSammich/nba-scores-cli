@@ -45,7 +45,7 @@ impl Team {
         // create team from vectors of team leaders and values
         Team {
             name: String::from(name),
-            score: score,
+            score,
             points_leader: String::from(leader_names
                                         .get(0)
                                         .expect("Could not read game leader")),
