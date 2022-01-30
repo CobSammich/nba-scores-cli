@@ -1,9 +1,9 @@
 // external packages
 extern crate reqwest;
-use select::document::Document;
-use select::predicate::{Attr, Class, Name, Predicate};
 use chrono;
 use clap::Parser;
+use select::document::Document;
+use select::predicate::{Attr, Class, Name, Predicate};
 
 // internal packages
 mod team;
@@ -29,7 +29,6 @@ struct Args {
     date: String,
 }
 
-
 enum TimeZone {
     // Defines different timezones (US only for now)
     Pacific,
@@ -47,16 +46,20 @@ struct Game {
 
 impl Game {
     fn display(&self) {
-        println!("{}", format!("{:^16}@{:^16}{:^3} - {:^3}\t{:^9}",
-                         self.away_team.name, self.home_team.name,
-                         self.away_team.score, self.home_team.score,
-                         self.game_time
-                         )
-                 );
+        println!(
+            "{}",
+            format!(
+                "{:^16}@{:^16}{:^3} - {:^3}\t{:^9}",
+                self.away_team.name,
+                self.home_team.name,
+                self.away_team.score,
+                self.home_team.score,
+                self.game_time
+            )
+        );
         // if game has started, then print the stat leaders
     }
 }
-
 
 // Parameters set by some config file
 static MY_TIMEZONE: TimeZone = TimeZone::Eastern;
@@ -119,18 +122,12 @@ fn form_game(game_block: select::node::Node) -> Game {
         // TODO/refactor: FUNCTIONALIZE
         //game_time = get_game_start_time(game_block);
         let game_time = match MY_TIMEZONE {
-            TimeZone::Pacific => String::from(time_zones
-                                              .get(0)
-                                              .expect("Could not read time zone")),
-            TimeZone::Mountain => String::from(time_zones
-                                               .get(1)
-                                               .expect("Could not read time zone")),
-            TimeZone::Central => String::from(time_zones
-                                              .get(2)
-                                              .expect("Could not read time zone")),
-            TimeZone::Eastern => String::from(time_zones
-                                              .get(3)
-                                              .expect("Could not read time zone")),
+            TimeZone::Pacific => String::from(time_zones.get(0).expect("Could not read time zone")),
+            TimeZone::Mountain => {
+                String::from(time_zones.get(1).expect("Could not read time zone"))
+            }
+            TimeZone::Central => String::from(time_zones.get(2).expect("Could not read time zone")),
+            TimeZone::Eastern => String::from(time_zones.get(3).expect("Could not read time zone")),
         };
 
         let game = Game {
@@ -145,18 +142,17 @@ fn form_game(game_block: select::node::Node) -> Game {
 
     // scrape gametime -- this is unfortunately a different html tag if the game hasn't started yet
 
-    let game_time = game_block.find(Class("shsTeamCol"))
-        .next()
-        .unwrap()
-        .text();
+    let game_time = game_block.find(Class("shsTeamCol")).next().unwrap().text();
 
     // there are scores shown -- continue
     let n_cols = scores.len() / 3;
-    let away_score = scores.get(n_cols * 2 - 1)
+    let away_score = scores
+        .get(n_cols * 2 - 1)
         .expect("Could not get away team's score")
         .parse::<u32>()
         .unwrap();
-    let home_score = scores.get(n_cols * 3 - 1)
+    let home_score = scores
+        .get(n_cols * 3 - 1)
         .expect("Could not get home team's score")
         .parse::<u32>()
         .unwrap();
@@ -184,8 +180,7 @@ fn form_game(game_block: select::node::Node) -> Game {
             // home team values
             home_leader_names.push(player_name.clone());
             home_leader_values.push(number);
-        }
-        else {
+        } else {
             // away team values
             away_leader_names.push(player_name.clone());
             away_leader_values.push(number);
@@ -195,10 +190,18 @@ fn form_game(game_block: select::node::Node) -> Game {
     }
 
     // Instantiate teams from the values we just scraped
-    let home_team = Team::from_leader_vector(home_team_name, home_score, home_leader_names,
-                                             home_leader_values);
-    let away_team = Team::from_leader_vector(away_team_name, away_score, away_leader_names,
-                                             away_leader_values);
+    let home_team = Team::from_leader_vector(
+        home_team_name,
+        home_score,
+        home_leader_names,
+        home_leader_values,
+    );
+    let away_team = Team::from_leader_vector(
+        away_team_name,
+        away_score,
+        away_leader_names,
+        away_leader_values,
+    );
 
     let game = Game {
         has_started: true,
@@ -211,8 +214,20 @@ fn form_game(game_block: select::node::Node) -> Game {
 }
 
 fn print_header() {
-    println!("{}", format!("{:^16} {:^16}{:^10}\t{:^10}", "Away", "Home", "Score", "Status"));
-    println!("{}", format!("{:^16} {:^16}{:^10}\t{:^10}", "----", "----", "-----", "------"));
+    println!(
+        "{}",
+        format!(
+            "{:^16} {:^16}{:^10}\t{:^10}",
+            "Away", "Home", "Score", "Status"
+        )
+    );
+    println!(
+        "{}",
+        format!(
+            "{:^16} {:^16}{:^10}\t{:^10}",
+            "----", "----", "-----", "------"
+        )
+    );
 }
 
 // --------------------------------------
@@ -234,13 +249,15 @@ fn extract_date_argument(date: &String) -> String {
         "y" => return format_date(current_date.pred().to_string()),
         // TODO: handle the different date formats here by passing them into conversion function
         // If the string given is a usable date, panic!
-        _ => panic!("Please give a recognizable date format. The formats recognized are \
-                    YYYYMMDD, ..."),
+        _ => panic!(
+            "Please give a recognizable date format. The formats recognized are \
+                    YYYYMMDD, ..."
+        ),
     };
     // TODO check if in usable format
     //if !date_format_usable(&date) {
-        // TODO if not supplied with valid date -- panic!
-        // How do we decide what date formats we can use?
+    // TODO if not supplied with valid date -- panic!
+    // How do we decide what date formats we can use?
 
     //}
 
