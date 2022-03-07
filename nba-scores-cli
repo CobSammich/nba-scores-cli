@@ -1,0 +1,8 @@
+#!/bin/bash
+# Builds the nba-scores-cli project and runs it continuously every 10 seconds.
+
+# suppress build warnings
+cargo build --release 2> /dev/null
+clear
+./target/release/nba-scores-cli -d t
+while sleep 10; do clear; ./target/release/nba-scores-cli -d t; done
