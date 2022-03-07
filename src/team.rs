@@ -1,3 +1,5 @@
+mod team_colors;
+use team_colors::TEAM_COLORS;
 
 #[derive(Debug)]
 pub struct Team {
@@ -15,6 +17,9 @@ pub struct Team {
     // assists leader name and number of assists
     pub assists_leader: String,
     pub assists_leader_value: u32,
+
+    // Color information
+    pub color_value: (u8, u8, u8),
 }
 
 // default constructor when passed no arguments to
@@ -34,6 +39,7 @@ impl Default for Team {
             // assists leader name and number of assists
             assists_leader: String::from(""),
             assists_leader_value: 0,
+            color_value: (0, 0, 0)
         }
 
     }
@@ -44,7 +50,7 @@ impl Team {
                           leader_names: Vec<String>, leader_values: Vec<u32>) -> Team {
         // create team from vectors of team leaders and values
         Team {
-            name: String::from(name),
+            name: String::from(&name),
             score,
             points_leader: String::from(leader_names
                                         .get(0)
@@ -64,6 +70,7 @@ impl Team {
             assists_leader_value: *leader_values
                 .get(2)
                 .expect("Could not read game leader"),
+            color_value: TEAM_COLORS[&name[..]]
         }
 
     }

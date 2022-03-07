@@ -4,6 +4,7 @@ use chrono;
 use clap::Parser;
 use select::document::Document;
 use select::predicate::{Attr, Class, Name, Predicate};
+use colored::Colorize;
 
 // internal packages
 mod team;
@@ -49,9 +50,9 @@ impl Game {
         println!(
             "{}",
             format!(
-                "{:^16}@{:^16}{:^3} - {:^3}\t{:^9}",
-                self.away_team.name,
-                self.home_team.name,
+                "{:^16}@{:^16}{:^5} - {:^5}\t{:^9}",
+                &self.away_team.name[..].on_truecolor(self.away_team.color_value.0, self.away_team.color_value.1, self.away_team.color_value.2),
+                &self.home_team.name[..].on_truecolor(self.home_team.color_value.0, self.home_team.color_value.1, self.home_team.color_value.2),
                 self.away_team.score,
                 self.home_team.score,
                 self.game_time
@@ -217,14 +218,14 @@ fn print_header() {
     println!(
         "{}",
         format!(
-            "{:^16} {:^16}{:^10}\t{:^10}",
+            "{:^16} {:^16}{:^13}\t{:^9}",
             "Away", "Home", "Score", "Status"
         )
     );
     println!(
         "{}",
         format!(
-            "{:^16} {:^16}{:^10}\t{:^10}",
+            "{:^16} {:^16}{:^13}\t{:^9}",
             "----", "----", "-----", "------"
         )
     );
@@ -266,6 +267,9 @@ fn extract_date_argument(date: &String) -> String {
 }
 
 // Should this be Result?
+
+
+
 fn date_format_usable(date: &String) -> bool {
     // trim off extra characters, if any
     if date.len() != 8 {
