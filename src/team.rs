@@ -71,8 +71,6 @@ impl Team {
                 .expect("Could not read game leader"),
             color_value: TEAM_COLORS[&name[..]]
         }
-
     }
-
 }
 

@@ -66,5 +66,5 @@ pub fn create_nonstarted_game(home_team_name: &str, away_team_name: &str, game_b
         game_time,
     };
     return game;
-
 }
+

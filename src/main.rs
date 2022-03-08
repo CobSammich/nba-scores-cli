@@ -3,7 +3,7 @@ extern crate reqwest;
 use chrono;
 use clap::Parser;
 use select::document::Document;
-use select::predicate::{Class, Name, Predicate};
+use select::predicate::Class;
 //use colored::Colorize;
 
 // internal packages
@@ -11,11 +11,11 @@ mod team;
 mod constants;
 mod game;
 mod timezones;
+mod parser;
 
 
-use crate::team::Team;
 use crate::game::Game;
-use crate::game::create_nonstarted_game;
+use crate::parser::form_game;
 
 // TODO:
 // * Major refactoring of form_game function
@@ -41,119 +41,6 @@ struct Args {
 
 fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
-}
-
-fn form_game(game_block: select::node::Node) -> Game {
-    // Does all the html parsing to make teams
-    // returns (home_team, away_team)
-
-    let teams: Vec<String> = game_block
-        .find(Class("shsNamD").descendant(Name("a")))
-        .map(|tag| tag.text())
-        .collect::<Vec<String>>();
-
-    // there are 15 values in here formatted like this:
-    // 1 2 3 4 Tot
-    // _ _ _ _ ___
-    // _ _ _ _ ___
-    // where the underscores represent values scored in the 1st, 2nd, 3rd, and 4th quarters
-    // as well as the whole game -- labeled by the header row
-    let scores: Vec<String> = game_block
-        .find(Class("shsTotD"))
-        .map(|tag| tag.text())
-        .collect::<Vec<String>>();
-
-    // get team leaders
-    let stat_leaders_raw: Vec<String> = game_block
-        .find(Class("shsLeader"))
-        .map(|tag| tag.text())
-        .collect::<Vec<String>>();
-
-    // Done parsing html
-    let away_team_name = String::from(teams.get(0).expect("No team names in this vector"));
-    let home_team_name = String::from(teams.get(1).expect("No team names in this vector"));
-
-    // get each teams scores:
-    // Critical design choice here: We decide that if there are no scores found (there are 10
-    // whitespace regions), then we return just the names of the teams
-    // TODO/refactor: functionalize this
-    if scores.len() == 10 {
-        let game = create_nonstarted_game(&home_team_name, &away_team_name, game_block);
-
-        return game;
-    }
-
-    // scrape gametime -- this is unfortunately a different html tag if the game hasn't started yet
-
-    let game_time = game_block.find(Class("shsTeamCol")).next().unwrap().text();
-
-    // there are scores shown -- continue
-    let n_cols = scores.len() / 3;
-    let away_score = scores
-        .get(n_cols * 2 - 1)
-        .expect("Could not get away team's score")
-        .parse::<u32>()
-        .unwrap();
-    let home_score = scores
-        .get(n_cols * 3 - 1)
-        .expect("Could not get home team's score")
-        .parse::<u32>()
-        .unwrap();
-
-    // store the stat leader names and the values of those stats
-    let mut home_leader_names: Vec<String> = Vec::new();
-    let mut away_leader_names: Vec<String> = Vec::new();
-    let mut home_leader_values: Vec<u32> = Vec::new();
-    let mut away_leader_values: Vec<u32> = Vec::new();
-
-    // there will be 6 values in this
-    let mut counter = 0;
-    for val in stat_leaders_raw {
-        let val_as_str = String::from(val);
-        let val_split_by_whitespace = val_as_str.split_whitespace().collect::<Vec<&str>>();
-        // form player name from every value but the final string
-        let player_name = &val_split_by_whitespace[..val_split_by_whitespace.len() - 1].join(" ");
-        // final string in vector represents the value of the stat category
-        let number = val_split_by_whitespace
-            .last()
-            .expect("Can't retrieve last value in array")
-            .parse::<u32>()
-            .unwrap();
-        if counter % 2 == 1 {
-            // home team values
-            home_leader_names.push(player_name.clone());
-            home_leader_values.push(number);
-        } else {
-            // away team values
-            away_leader_names.push(player_name.clone());
-            away_leader_values.push(number);
-        }
-        counter += 1;
-        // stat_leaders_raw is freed
-    }
-
-    // Instantiate teams from the values we just scraped
-    let home_team = Team::from_leader_vector(
-        home_team_name,
-        home_score,
-        home_leader_names,
-        home_leader_values,
-    );
-    let away_team = Team::from_leader_vector(
-        away_team_name,
-        away_score,
-        away_leader_names,
-        away_leader_values,
-    );
-
-    let game = Game {
-        has_started: true,
-        away_team,
-        home_team,
-        game_time,
-    };
-
-    return game;
 }
 
 fn print_header() {
