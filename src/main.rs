@@ -3,12 +3,19 @@ extern crate reqwest;
 use chrono;
 use clap::Parser;
 use select::document::Document;
-use select::predicate::{Attr, Class, Name, Predicate};
-use colored::Colorize;
+use select::predicate::{Class, Name, Predicate};
+//use colored::Colorize;
 
 // internal packages
 mod team;
-use team::Team;
+mod constants;
+mod game;
+mod timezones;
+
+
+use crate::team::Team;
+use crate::game::Game;
+use crate::game::create_nonstarted_game;
 
 // TODO:
 // * Major refactoring of form_game function
@@ -30,40 +37,6 @@ struct Args {
     date: String,
 }
 
-enum TimeZone {
-    // Defines different timezones (US only for now)
-    Pacific,
-    Mountain,
-    Central,
-    Eastern,
-}
-
-struct Game {
-    has_started: bool,
-    away_team: Team,
-    home_team: Team,
-    game_time: String,
-}
-
-impl Game {
-    fn display(&self) {
-        println!(
-            "{}",
-            format!(
-                "{:^16}@{:^16}{:^5} - {:^5}\t{:^9}",
-                &self.away_team.name[..].on_truecolor(self.away_team.color_value.0, self.away_team.color_value.1, self.away_team.color_value.2),
-                &self.home_team.name[..].on_truecolor(self.home_team.color_value.0, self.home_team.color_value.1, self.home_team.color_value.2),
-                self.away_team.score,
-                self.home_team.score,
-                self.game_time
-            )
-        );
-        // if game has started, then print the stat leaders
-    }
-}
-
-// Parameters set by some config file
-static MY_TIMEZONE: TimeZone = TimeZone::Eastern;
 // end Params
 
 fn print_type_of<T>(_: &T) {
@@ -105,38 +78,7 @@ fn form_game(game_block: select::node::Node) -> Game {
     // whitespace regions), then we return just the names of the teams
     // TODO/refactor: functionalize this
     if scores.len() == 10 {
-        //let away_team = Team::default(away_team_name);
-        let home_team = Team {
-            name: String::from(home_team_name),
-            ..Team::default()
-        };
-        let away_team = Team {
-            name: String::from(away_team_name),
-            ..Team::default()
-        };
-        // find game start time based on Timezone
-        let time_zones: Vec<String> = game_block
-            .find(Class("shsTimezone"))
-            .map(|tag| tag.text())
-            .collect::<Vec<String>>();
-
-        // TODO/refactor: FUNCTIONALIZE
-        //game_time = get_game_start_time(game_block);
-        let game_time = match MY_TIMEZONE {
-            TimeZone::Pacific => String::from(time_zones.get(0).expect("Could not read time zone")),
-            TimeZone::Mountain => {
-                String::from(time_zones.get(1).expect("Could not read time zone"))
-            }
-            TimeZone::Central => String::from(time_zones.get(2).expect("Could not read time zone")),
-            TimeZone::Eastern => String::from(time_zones.get(3).expect("Could not read time zone")),
-        };
-
-        let game = Game {
-            has_started: false,
-            away_team,
-            home_team,
-            game_time,
-        };
+        let game = create_nonstarted_game(&home_team_name, &away_team_name, game_block);
 
         return game;
     }
