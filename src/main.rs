@@ -4,18 +4,18 @@ use chrono;
 use clap::Parser;
 use select::document::Document;
 use select::predicate::Class;
-//use colored::Colorize;
 
 // internal packages
-mod team;
 mod constants;
+mod display;
 mod game;
-mod timezones;
 mod parser;
-
+mod team;
+mod timezones;
 
 use crate::game::Game;
 use crate::parser::form_game;
+use crate::display::print_header;
 
 // TODO:
 // * Major refactoring of form_game function
@@ -41,23 +41,6 @@ struct Args {
 
 fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
-}
-
-fn print_header() {
-    println!(
-        "{}",
-        format!(
-            "{:^16} {:^16}{:^13}\t{:^9}",
-            "Away", "Home", "Score", "Status"
-        )
-    );
-    println!(
-        "{}",
-        format!(
-            "{:^16} {:^16}{:^13}\t{:^9}",
-            "----", "----", "-----", "------"
-        )
-    );
 }
 
 // --------------------------------------
@@ -96,8 +79,6 @@ fn extract_date_argument(date: &String) -> String {
 }
 
 // Should this be Result?
-
-
 
 fn date_format_usable(date: &String) -> bool {
     // trim off extra characters, if any
