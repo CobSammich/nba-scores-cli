@@ -1,5 +1,4 @@
-mod team_colors;
-use team_colors::TEAM_COLORS;
+use crate::constants::TEAM_COLORS;
 
 #[derive(Debug)]
 pub struct Team {

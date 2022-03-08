@@ -1,5 +1,7 @@
 use phf::phf_map;
 
+use crate::timezones::TimeZone;
+
 // Each city name will have a mapping to an RGB color value
 pub static TEAM_COLORS: phf::Map<&'static str, (u8, u8, u8)> = phf_map! {
     "Atlanta" => (225, 68, 52),
@@ -33,3 +35,5 @@ pub static TEAM_COLORS: phf::Map<&'static str, (u8, u8, u8)> = phf_map! {
     "Utah" => (0, 43, 92),
     "Washington" => (0, 43, 92),
 };
+
+pub static MY_TIMEZONE: TimeZone = TimeZone::Eastern;
