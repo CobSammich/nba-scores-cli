@@ -82,6 +82,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(resp.status().is_success());
         let document = Document::from(&*resp.text().await?);
 
+        // clear terminal and set program to write in top left of terminal
+        print!("\x1B[2J");
+        write!(stdout(), "{}", termion::cursor::Goto(1, 1)).unwrap();
         print_header();
 
         for row in document.find(Class("shsScoreboardRow")) {
