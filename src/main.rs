@@ -1,5 +1,6 @@
 // external packages
 extern crate reqwest;
+use std::{thread, time};
 use chrono;
 use clap::Parser;
 use select::document::Document;
@@ -56,25 +57,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let url_base = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=");
     let url = url_base + &date;
 
-    // Get the webpage
-    let resp = reqwest::get(url).await?;
-    assert!(resp.status().is_success());
-    let document = Document::from(&*resp.text().await?);
+    // loop here
+    while true {
+        // Get the webpage
+        let resp = reqwest::get(&url).await?;
+        assert!(resp.status().is_success());
+        let document = Document::from(&*resp.text().await?);
 
-    print_header();
+        print_header();
 
-    for row in document.find(Class("shsScoreboardRow")) {
-        // there are two games per row
-        for game_block in row.find(Class("shsScoreboardCol")) {
-            // given a game block, form two Teams and a Game
-            // parse the current game block for game info
-            let game: Game = form_game(game_block);
-            //println!("{:?}", game.home_team);
-            //println!("{:?}", game.away_team);
+        for row in document.find(Class("shsScoreboardRow")) {
+            // there are two games per row
+            for game_block in row.find(Class("shsScoreboardCol")) {
+                // given a game block, form two Teams and a Game
+                // parse the current game block for game info
+                let game: Game = form_game(game_block);
+                //println!("{:?}", game.home_team);
+                //println!("{:?}", game.away_team);
 
-            // print current game info to terminal
-            game.display();
+                // print current game info to terminal
+                game.display();
+            }
         }
+        let sleep_time = time::Duration::from_secs(10);
+        thread::sleep(sleep_time);
     }
     return Ok(());
 }
