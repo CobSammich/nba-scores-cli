@@ -83,8 +83,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let document = Document::from(&*resp.text().await?);
 
         // clear terminal and set program to write in top left of terminal
-        print!("\x1B[2J");
-        write!(stdout(), "{}", termion::cursor::Goto(1, 1)).unwrap();
+        // TODO: Functionalize this (1)
+        write!(stdout(),
+               "{}{}{}",
+               termion::clear::All,
+               termion::cursor::Goto(1, 1),
+               termion::cursor::Hide)
+               .unwrap();
         print_header();
 
         for row in document.find(Class("shsScoreboardRow")) {
@@ -115,7 +120,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(Ok(b'q')) = b {
                 // clean up and end program
                 print!("\x1B[2J");
-                write!(stdout, "{}", termion::cursor::Goto(1, 1)).unwrap();
+                write!(stdout,
+                       "{}{}",
+                       termion::cursor::Goto(1, 1),
+                       termion::cursor::Show)
+                       .unwrap();
                 stdout.flush().unwrap();
                 break 'program_loop;
             }
@@ -126,11 +135,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             counter += 1;
             // wait 10 seconds before re-running program
             if counter * sleep_time_in_ms >= 10000 {
-                write!(stdout,
-                       "{}{}",
-                       termion::clear::All,
-                       termion::cursor::Goto(1, 1))
-                       .unwrap();
+            // TODO: Functionalize this (1)
+            write!(stdout,
+                   "{}{}{}",
+                   termion::clear::All,
+                   termion::cursor::Goto(1, 1),
+                   termion::cursor::Hide)
+                   .unwrap();
                 break 'inner;
             }
         }
