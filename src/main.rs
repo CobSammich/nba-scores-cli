@@ -1,10 +1,22 @@
 // external packages
 extern crate reqwest;
+extern crate termion;
+
 use std::{thread, time};
 use chrono;
 use clap::Parser;
 use select::document::Document;
 use select::predicate::Class;
+
+
+use termion::event::Key;
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::async_stdin;
+
+
+//use tokio::io::stdout;
+use std::io::{Read, Write, stdout, stdin};
 
 // internal packages
 mod constants;
@@ -49,6 +61,7 @@ fn print_type_of<T>(_: &T) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    //let mut stdin = async_stdin().bytes();
     // Parse command line arguments
     let args = Args::parse();
     // handle date
@@ -58,7 +71,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let url = url_base + &date;
 
     // loop here
-    while true {
+    let mut stdin = async_stdin().bytes();
+    'program_loop: loop {
+        //let stdin = stdin.lock();
+        // controller for detecting 'q' key to exit program
+        // clear terminal
+        //print!("\x1B[2J");
         // Get the webpage
         let resp = reqwest::get(&url).await?;
         assert!(resp.status().is_success());
@@ -79,8 +97,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 game.display();
             }
         }
-        let sleep_time = time::Duration::from_secs(10);
-        thread::sleep(sleep_time);
+
+        // loop to exit
+        //let mut bytes = stdin.bytes();
+        let mut counter = 0;
+        'inner: loop {
+            //let b = bytes.next().unwrap().unwrap();
+            let stdout = stdout();
+            let mut stdout = stdout.lock().into_raw_mode().unwrap();
+            let b = stdin.next();
+            //write!(stdout, "\r{:?}    <- This demonstrates the async read input char. Between each update a 100 ms. is waited, simply to demonstrate the async fashion. \n\r", b).unwrap();
+            write!(stdout, "\r").unwrap();
+            //println!("{:?}", b);
+            if let Some(Ok(b'q')) = b {
+                // clean up and end program
+                print!("\x1B[2J");
+                write!(stdout, "{}", termion::cursor::Goto(1, 1)).unwrap();
+                stdout.flush().unwrap();
+                break 'program_loop;
+            }
+
+            let sleep_time_in_ms = 50;
+            let sleep_time = time::Duration::from_millis(sleep_time_in_ms);
+            thread::sleep(sleep_time);
+            counter += 1;
+            // wait 10 seconds before re-running program
+            if counter * sleep_time_in_ms >= 10000 {
+                write!(stdout,
+                       "{}{}",
+                       termion::clear::All,
+                       termion::cursor::Goto(1, 1))
+                       .unwrap();
+                break 'inner;
+            }
+        }
+        //let sleep_time = time::Duration::from_secs(10);
+        //thread::sleep(sleep_time);
+
+        //break 'program_loop
     }
     return Ok(());
 }
