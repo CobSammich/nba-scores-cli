@@ -70,13 +70,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let url_base = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=");
     let url = url_base + &date;
 
-    // loop here
+    //stdin controls user input
+    // program loop -- re-fetch html and display games every 10 seconds
     let mut stdin = async_stdin().bytes();
     'program_loop: loop {
-        //let stdin = stdin.lock();
         // controller for detecting 'q' key to exit program
         // clear terminal
-        //print!("\x1B[2J");
         // Get the webpage
         let resp = reqwest::get(&url).await?;
         assert!(resp.status().is_success());
@@ -84,12 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // clear terminal and set program to write in top left of terminal
         // TODO: Functionalize this (1)
-        write!(stdout(),
-               "{}{}{}",
-               termion::clear::All,
-               termion::cursor::Goto(1, 1),
-               termion::cursor::Hide)
-               .unwrap();
+        clear_terminal();
         print_header();
 
         for row in document.find(Class("shsScoreboardRow")) {
@@ -135,13 +129,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             counter += 1;
             // wait 10 seconds before re-running program
             if counter * sleep_time_in_ms >= 10000 {
-            // TODO: Functionalize this (1)
-            write!(stdout,
-                   "{}{}{}",
-                   termion::clear::All,
-                   termion::cursor::Goto(1, 1),
-                   termion::cursor::Hide)
-                   .unwrap();
                 break 'inner;
             }
         }
@@ -151,4 +138,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         //break 'program_loop
     }
     return Ok(());
+}
+
+
+fn clear_terminal() {
+    write!(stdout(),
+           "{}{}{}",
+           termion::clear::All,
+           termion::cursor::Goto(1, 1),
+           termion::cursor::Hide)
+           .unwrap();
 }
