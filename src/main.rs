@@ -17,6 +17,7 @@ use termion::async_stdin;
 
 //use tokio::io::stdout;
 use std::io::{Read, Write, stdout, stdin};
+use std::panic;
 
 // internal packages
 mod constants;
@@ -62,6 +63,8 @@ fn print_type_of<T>(_: &T) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+     better_panic::install();
+    setup_panic_hook();
     //stdin controls user input
     let mut stdin = async_stdin().bytes();
     // Parse command line arguments
@@ -103,20 +106,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         'inner: loop {
             //let b = bytes.next().unwrap().unwrap();
             let stdout = stdout();
+            // raw mode means no stdin will print to the terminal
             let mut stdout = stdout.lock().into_raw_mode().unwrap();
             let b = stdin.next();
             // this is the async read input char, it looks for user input
             write!(stdout, "\r").unwrap();
             if let Some(Ok(b'q')) = b {
                 // clean up and end program
-                write!(stdout,
-                       "{}{}{}",
-                       termion::clear::All,
-                       termion::cursor::Goto(1, 1),
-                       termion::cursor::Show)
-                       .unwrap();
-                stdout.flush().unwrap();
+                cleanup_terminal();
                 break 'program_loop;
+            }
+            // debug key
+            if let Some(Ok(b'd')) = b {
+                panic!("Debug button Pressed!");
             }
 
             let sleep_time_in_ms = 50;
@@ -130,4 +132,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     return Ok(());
+}
+
+fn cleanup_terminal() {
+    let mut stdout = stdout();
+    write!(stdout,
+           "{}{}{}",
+           termion::clear::All,
+           termion::cursor::Goto(1, 1),
+           termion::cursor::Show)
+           .unwrap();
+    stdout.flush().unwrap();
+}
+
+fn setup_panic_hook() {
+    panic::set_hook(Box::new(|panic_info| {
+        cleanup_terminal();
+        println!("{}", panic_info);
+        //better_panic::Settings::auto().create_panic_handler()(panic_info);
+    }));
 }
