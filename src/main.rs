@@ -30,6 +30,7 @@ mod timezones;
 use crate::date_handler::extract_date_argument;
 use crate::display::print_header;
 use crate::game::Game;
+use crate::display::clear_terminal;
 use crate::html_parser::form_game;
 
 // TODO:
@@ -61,7 +62,8 @@ fn print_type_of<T>(_: &T) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //let mut stdin = async_stdin().bytes();
+    //stdin controls user input
+    let mut stdin = async_stdin().bytes();
     // Parse command line arguments
     let args = Args::parse();
     // handle date
@@ -70,19 +72,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let url_base = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=");
     let url = url_base + &date;
 
-    //stdin controls user input
     // program loop -- re-fetch html and display games every 10 seconds
-    let mut stdin = async_stdin().bytes();
     'program_loop: loop {
         // controller for detecting 'q' key to exit program
-        // clear terminal
         // Get the webpage
         let resp = reqwest::get(&url).await?;
         assert!(resp.status().is_success());
         let document = Document::from(&*resp.text().await?);
 
         // clear terminal and set program to write in top left of terminal
-        // TODO: Functionalize this (1)
         clear_terminal();
         print_header();
 
@@ -100,22 +98,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        // loop to exit
-        //let mut bytes = stdin.bytes();
+        // loop to get user input -- lasts 10 seconds and then re-runs program loop
         let mut counter = 0;
         'inner: loop {
             //let b = bytes.next().unwrap().unwrap();
             let stdout = stdout();
             let mut stdout = stdout.lock().into_raw_mode().unwrap();
             let b = stdin.next();
-            //write!(stdout, "\r{:?}    <- This demonstrates the async read input char. Between each update a 100 ms. is waited, simply to demonstrate the async fashion. \n\r", b).unwrap();
+            // this is the async read input char, it looks for user input
             write!(stdout, "\r").unwrap();
-            //println!("{:?}", b);
             if let Some(Ok(b'q')) = b {
                 // clean up and end program
-                print!("\x1B[2J");
                 write!(stdout,
-                       "{}{}",
+                       "{}{}{}",
+                       termion::clear::All,
                        termion::cursor::Goto(1, 1),
                        termion::cursor::Show)
                        .unwrap();
@@ -132,20 +128,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 break 'inner;
             }
         }
-        //let sleep_time = time::Duration::from_secs(10);
-        //thread::sleep(sleep_time);
-
-        //break 'program_loop
     }
     return Ok(());
-}
-
-
-fn clear_terminal() {
-    write!(stdout(),
-           "{}{}{}",
-           termion::clear::All,
-           termion::cursor::Goto(1, 1),
-           termion::cursor::Hide)
-           .unwrap();
 }
