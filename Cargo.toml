@@ -13,3 +13,5 @@ chrono = "0.4"
 clap = { version = "3.0.7", features = ["derive"] }
 colored = "2"
 phf = { version = "0.10", features = ["macros"] }
+termion = "1.5.6"
+better-panic = "0.2"
