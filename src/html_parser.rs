@@ -9,6 +9,8 @@ fn get_team_names(game_block: select::node::Node) -> (String, String) {
         .map(|tag| tag.text())
         .collect::<Vec<String>>();
 
+    // TODO: panicking here when (I'm assuming) we don't have an HTML document to actually parse --
+    // it failed to read the site
     let away_team_name = String::from(teams.get(0).expect("No team names in this vector"));
     let home_team_name = String::from(teams.get(1).expect("No team names in this vector"));
     return (home_team_name, away_team_name);
