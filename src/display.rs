@@ -28,7 +28,7 @@ pub fn print_header() {
 ///
 /// Basic usage:
 /// ```
-/// clear_terminal()
+/// clear_terminal();
 /// ```
 pub fn clear_terminal() {
     write!(stdout(),
@@ -37,4 +37,23 @@ pub fn clear_terminal() {
            termion::cursor::Goto(1, 1),
            termion::cursor::Hide)
            .unwrap();
+}
+
+/// Clears the terminal, shows the cursor at the top left and flushed stdout. Used when we are
+/// ending the program
+///
+/// # Examples
+///
+/// ```
+/// cleanup_terminal();
+/// ```
+pub fn cleanup_terminal() {
+    let mut stdout = stdout();
+    write!(stdout,
+           "{}{}{}",
+           termion::clear::All,
+           termion::cursor::Goto(1, 1),
+           termion::cursor::Show)
+           .unwrap();
+    stdout.flush().unwrap();
 }

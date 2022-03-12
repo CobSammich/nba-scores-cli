@@ -31,7 +31,7 @@ mod timezones;
 use crate::date_handler::extract_date_argument;
 use crate::display::print_header;
 use crate::game::Game;
-use crate::display::clear_terminal;
+use crate::display::{clear_terminal, cleanup_terminal};
 use crate::html_parser::form_game;
 
 // TODO:
@@ -111,6 +111,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let b = stdin.next();
             // this is the async read input char, it looks for user input
             write!(stdout, "\r").unwrap();
+            // cases for buttons to press
+            // TODO: Refactor into key handling module
             if let Some(Ok(b'q')) = b {
                 // clean up and end program
                 cleanup_terminal();
@@ -118,7 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             // debug key
             if let Some(Ok(b'd')) = b {
-                panic!("Debug button Pressed!");
+                println!("Debug button Pressed!");
             }
 
             let sleep_time_in_ms = 50;
@@ -132,17 +134,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     return Ok(());
-}
-
-fn cleanup_terminal() {
-    let mut stdout = stdout();
-    write!(stdout,
-           "{}{}{}",
-           termion::clear::All,
-           termion::cursor::Goto(1, 1),
-           termion::cursor::Show)
-           .unwrap();
-    stdout.flush().unwrap();
 }
 
 fn setup_panic_hook() {
