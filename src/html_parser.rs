@@ -3,6 +3,17 @@ use select::predicate::{Class, Name, Predicate};
 use crate::team::Team;
 use crate::game::{Game, create_nonstarted_game};
 
+/// Parses a game block document node to retrieve the two team names.
+///
+/// # Arguments
+///
+/// * `game_block` - A Node (from select.rs) object containing tags with
+///
+/// # Examples
+///
+/// ```
+/// let (home_team_name, away_team_name) = get_team_names(game_block);
+/// ```
 fn get_team_names(game_block: select::node::Node) -> (String, String) {
     let teams: Vec<String> = game_block
         .find(Class("shsNamD").descendant(Name("a")))
@@ -16,6 +27,17 @@ fn get_team_names(game_block: select::node::Node) -> (String, String) {
     return (home_team_name, away_team_name);
 }
 
+/// Parses a game block document node to retrieve two team scores.
+///
+/// # Arguments
+///
+/// * `game_block` - A Node (from select.rs) object containing tags with
+///
+/// # Examples
+///
+/// ```
+/// let (home_score, away_score) = get_team_scores(game_block);
+/// ```
 fn get_team_scores(game_block: select::node::Node) -> (u32, u32) {
     // there are 15 values in here formatted like this:
     // 1 2 3 4 Tot
@@ -125,7 +147,12 @@ fn get_game_leaders(game_block: select::node::Node,
 /// # Examples
 ///
 /// ```
-/// [TODO:example]
+/// // retrieve a "game block" from a html document
+/// let document = Document::from(&*resp.text().await?);
+/// let game_block = document.find(Class("shsScoreboardRow")).find(Class("shsScoreboardCol"));
+/// let game: Game = form_game(game_block);
+/// // To display the game
+/// game.display();
 /// ```
 pub fn form_game(game_block: select::node::Node) -> Game {
     // Does all the html parsing to make teams
