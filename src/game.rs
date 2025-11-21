@@ -1,9 +1,9 @@
 use select::predicate::{Class, Name, Predicate};
 
+use crate::constants::{MY_TIMEZONE, TEAM_COLORS};
 use crate::team::Team;
-use colored::Colorize;
 use crate::timezones::TimeZone;
-use crate::constants::{TEAM_COLORS, MY_TIMEZONE};
+use colored::Colorize;
 
 pub struct Game {
     pub has_started: bool,
@@ -18,8 +18,16 @@ impl Game {
             "{}",
             format!(
                 "{:^16}@{:^16}{:^5} - {:^5}\t{:^9}",
-                &self.away_team.name[..].on_truecolor(self.away_team.color_value.0, self.away_team.color_value.1, self.away_team.color_value.2),
-                &self.home_team.name[..].on_truecolor(self.home_team.color_value.0, self.home_team.color_value.1, self.home_team.color_value.2),
+                &self.away_team.name[..].on_truecolor(
+                    self.away_team.color_value.0,
+                    self.away_team.color_value.1,
+                    self.away_team.color_value.2
+                ),
+                &self.home_team.name[..].on_truecolor(
+                    self.home_team.color_value.0,
+                    self.home_team.color_value.1,
+                    self.home_team.color_value.2
+                ),
                 self.away_team.score,
                 self.home_team.score,
                 self.game_time
@@ -29,7 +37,11 @@ impl Game {
     }
 }
 
-pub fn create_nonstarted_game(home_team_name: &str, away_team_name: &str, game_block: select::node::Node) -> Game {
+pub fn create_nonstarted_game(
+    home_team_name: &str,
+    away_team_name: &str,
+    game_block: select::node::Node,
+) -> Game {
     //let away_team = Team::default(away_team_name);
     // TODO: need to put team color in here
     let home_team = Team {
@@ -52,9 +64,7 @@ pub fn create_nonstarted_game(home_team_name: &str, away_team_name: &str, game_b
     //game_time = get_game_start_time(game_block);
     let game_time = match MY_TIMEZONE {
         TimeZone::Pacific => String::from(time_zones.get(0).expect("Could not read time zone")),
-        TimeZone::Mountain => {
-            String::from(time_zones.get(1).expect("Could not read time zone"))
-        }
+        TimeZone::Mountain => String::from(time_zones.get(1).expect("Could not read time zone")),
         TimeZone::Central => String::from(time_zones.get(2).expect("Could not read time zone")),
         TimeZone::Eastern => String::from(time_zones.get(3).expect("Could not read time zone")),
     };
@@ -67,4 +77,3 @@ pub fn create_nonstarted_game(home_team_name: &str, away_team_name: &str, game_b
     };
     return game;
 }
-

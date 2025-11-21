@@ -1,7 +1,14 @@
 
 fn format_date(date: String) -> String {
-    // Given a String in the form YYYY-MM-DD, Returns String in the form YYYYMMDD
-    return date.split('-').collect::<Vec<&str>>()[0..3].join("");
+    // Given a String in the form YYYY-MM-DD[-HH-MM], Returns String in the form ?month=MM&day=DD&year=YYYY
+    let date_vec: Vec<&str> = date.split('-').collect();
+    if date_vec.len() < 3 {
+        panic!("Invalid date format: expected at least YYYY-MM-DD");
+    }
+    let year = date_vec[0];
+    let month = date_vec[1];
+    let day = date_vec[2];
+    format!("?month={}&day={}&year={}", month, day, year)
 }
 
 // TODO: return Result??

@@ -16,7 +16,7 @@ use crate::game::{Game, create_nonstarted_game};
 /// ```
 fn get_team_names(game_block: select::node::Node) -> (String, String) {
     let teams: Vec<String> = game_block
-        .find(Class("shsNamD").descendant(Name("a")))
+        .find(Class("ScoreCell__TeamName").descendant(Name("a")))
         .map(|tag| tag.text())
         .collect::<Vec<String>>();
 
@@ -95,7 +95,8 @@ fn get_team_scores(game_block: select::node::Node) -> (u32, u32) {
 /// let mut away_leader_values: Vec<u32> = Vec::new();
 ///
 /// // populate the vectores defined above.
-/// get_game_leaders(game_block, &mut home_leader_names, &mut home_leader_values, &mut away_leader_names, &mut away_leader_values);
+/// get_game_leaders(game_block, &mut home_leader_names, &mut home_leader_values, &mut
+/// away_leader_names, &mut away_leader_values);
 /// ```
 fn get_game_leaders(game_block: select::node::Node,
     home_leader_names: &mut Vec<String>, home_leader_values: &mut Vec<u32>,

@@ -2,21 +2,19 @@
 extern crate reqwest;
 extern crate termion;
 
-use std::{thread, time};
 use chrono;
 use clap::Parser;
 use select::document::Document;
 use select::predicate::Class;
+use std::{thread, time};
 
-
+use termion::async_stdin;
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
-use termion::async_stdin;
-
 
 //use tokio::io::stdout;
-use std::io::{Read, Write, stdout, stdin};
+use std::io::{stdin, stdout, Read, Write};
 use std::panic;
 
 // internal packages
@@ -30,8 +28,8 @@ mod timezones;
 
 use crate::date_handler::extract_date_argument;
 use crate::display::print_header;
+use crate::display::{cleanup_terminal, clear_terminal};
 use crate::game::Game;
-use crate::display::{clear_terminal, cleanup_terminal};
 use crate::html_parser::form_game;
 
 // TODO:
@@ -60,10 +58,9 @@ fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
 }
 
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-     better_panic::install();
+    better_panic::install();
     setup_panic_hook();
     //stdin controls user input
     let mut stdin = async_stdin().bytes();
@@ -72,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // handle date
     let date = extract_date_argument(&args.date);
     // form the url to look for based on the date.
-    let url_base = String::from("https://scores.nbcsports.com/nba/scoreboard.asp?day=");
+    let url_base = String::from("https://www.basketball-reference.com/boxscores/");
     let url = url_base + &date;
 
     // program loop -- re-fetch html and display games every 10 seconds
@@ -84,20 +81,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let document = Document::from(&*resp.text().await?);
 
         // clear terminal and set program to write in top left of terminal
-        clear_terminal();
-        print_header();
+        //clear_terminal();
+        //print_header();
 
-        for row in document.find(Class("shsScoreboardRow")) {
+        //for row in document.find(Class("shsScoreboardRow")) {
+        for row in document.find(Class("game_summaries")) {
             // there are two games per row
-            for game_block in row.find(Class("shsScoreboardCol")) {
+            for game_block in row.find(Class("teams")) {
+                println!("{:?}", game_block);
                 // given a game block, form two Teams and a Game
                 // parse the current game block for game info
-                let game: Game = form_game(game_block);
-                //println!("{:?}", game.home_team);
-                //println!("{:?}", game.away_team);
+                // let game: Game = form_game(game_block);
+                // println!("{:?}", game.home_team);
+                // println!("{:?}", game.away_team);
 
                 // print current game info to terminal
-                game.display();
+                //game.display();
             }
         }
 
@@ -133,6 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
+
     return Ok(());
 }
 
