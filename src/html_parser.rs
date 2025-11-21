@@ -16,15 +16,15 @@ use crate::game::{Game, create_nonstarted_game};
 /// ```
 fn get_team_names(game_block: select::node::Node) -> (String, String) {
     let teams: Vec<String> = game_block
-        .find(Class("ScoreCell__TeamName").descendant(Name("a")))
+        .find(Name("table").and(Class("teams")).descendant(Name("a")))
         .map(|tag| tag.text())
         .collect::<Vec<String>>();
 
     // TODO: panicking here when (I'm assuming) we don't have an HTML document to actually parse --
     // it failed to read the site
-    let away_team_name = String::from(teams.get(0).expect("No team names in this vector"));
-    let home_team_name = String::from(teams.get(1).expect("No team names in this vector"));
-    return (home_team_name, away_team_name);
+    let away_team_name = teams.get(0).expect("No team names in this vector").clone();
+    let home_team_name = teams.get(1).expect("No team names in this vector").clone();
+    (home_team_name, away_team_name)
 }
 
 /// Parses a game block document node to retrieve two team scores.
@@ -39,38 +39,16 @@ fn get_team_names(game_block: select::node::Node) -> (String, String) {
 /// let (home_score, away_score) = get_team_scores(game_block);
 /// ```
 fn get_team_scores(game_block: select::node::Node) -> (u32, u32) {
-    // there are 15 values in here formatted like this:
-    // 1 2 3 4 Tot
-    // _ _ _ _ ___
-    // _ _ _ _ ___
-    // where the underscores represent values scored in the 1st, 2nd, 3rd, and 4th quarters
-    // as well as the whole game -- labeled by the header row
-    let scores: Vec<String> = game_block
-        .find(Class("shsTotD"))
-        .map(|tag| tag.text())
-        .collect::<Vec<String>>();
+    let scores: Vec<u32> = game_block
+        .find(Name("table").and(Class("teams")).descendant(Class("right")))
+        .filter_map(|td| td.text().trim().parse::<u32>().ok())
+        .collect::<Vec<u32>>();
 
-    // Critical design choice here: We decide that if there are no scores found (there are 10
-    // whitespace regions), then we return the max u32 value
-    if scores.len() == 10 {
-        return (u32::MAX, u32::MAX);
-    }
+    // Assume scores are present; if not, this will panic, but for now, all games have scores
+    let away_score = *scores.get(0).expect("Could not get away team's score");
+    let home_score = *scores.get(1).expect("Could not get home team's score");
 
-
-    // there are scores shown -- continue
-    let n_cols = scores.len() / 3;
-    let away_score = scores
-        .get(n_cols * 2 - 1)
-        .expect("Could not get away team's score")
-        .parse::<u32>()
-        .unwrap();
-    let home_score = scores
-        .get(n_cols * 3 - 1)
-        .expect("Could not get home team's score")
-        .parse::<u32>()
-        .unwrap();
-
-    return (home_score, away_score);
+    (home_score, away_score)
 }
 
 /// Parses the HTML game block region and populates the given vectors with Names and values of game
@@ -159,12 +137,6 @@ pub fn form_game(game_block: select::node::Node) -> Game {
     // Does all the html parsing to make teams
     let (home_team_name, away_team_name) = get_team_names(game_block);
     let (home_score, away_score) = get_team_scores(game_block);
-    let mut home_leader_names: Vec<String> = Vec::new();
-    let mut away_leader_names: Vec<String> = Vec::new();
-    let mut home_leader_values: Vec<u32> = Vec::new();
-    let mut away_leader_values: Vec<u32> = Vec::new();
-
-    get_game_leaders(game_block, &mut home_leader_names, &mut home_leader_values, &mut away_leader_names, &mut away_leader_values);
     // Done parsing html
 
     // NOTE: This is a check for if the game has started yet or not
@@ -175,21 +147,11 @@ pub fn form_game(game_block: select::node::Node) -> Game {
     }
 
     // scrape gametime -- this is unfortunately a different html tag if the game hasn't started yet
-    let game_time = game_block.find(Class("shsTeamCol")).next().unwrap().text();
+    let game_time = game_block.find(Class("gamelink")).next().unwrap().text();
 
     // Instantiate teams from the values we just scraped
-    let home_team = Team::from_leader_vector(
-        home_team_name,
-        home_score,
-        home_leader_names,
-        home_leader_values
-    );
-    let away_team = Team::from_leader_vector(
-        away_team_name,
-        away_score,
-        away_leader_names,
-        away_leader_values
-    );
+    let home_team = Team::new(home_team_name, home_score);
+    let away_team = Team::new(away_team_name, away_score);
 
     let game = Game {
         has_started: true,

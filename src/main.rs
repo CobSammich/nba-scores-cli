@@ -81,22 +81,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let document = Document::from(&*resp.text().await?);
 
         // clear terminal and set program to write in top left of terminal
-        //clear_terminal();
-        //print_header();
+        clear_terminal();
+        print_header();
 
         //for row in document.find(Class("shsScoreboardRow")) {
         for row in document.find(Class("game_summaries")) {
             // there are two games per row
             for game_block in row.find(Class("teams")) {
-                println!("{:?}", game_block);
+                //println!("{:?}", game_block);
                 // given a game block, form two Teams and a Game
                 // parse the current game block for game info
-                // let game: Game = form_game(game_block);
+                let game: Game = form_game(game_block);
                 // println!("{:?}", game.home_team);
                 // println!("{:?}", game.away_team);
 
                 // print current game info to terminal
-                //game.display();
+                game.display();
             }
         }
 

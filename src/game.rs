@@ -14,24 +14,25 @@ pub struct Game {
 
 impl Game {
     pub fn display(&self) {
+        let away_padded = format!("{:^16}", &self.away_team.name);
+        let home_padded = format!("{:^16}", &self.home_team.name);
+        let away_colored = away_padded.on_truecolor(
+            self.away_team.color_value.0,
+            self.away_team.color_value.1,
+            self.away_team.color_value.2
+        );
+        let home_colored = home_padded.on_truecolor(
+            self.home_team.color_value.0,
+            self.home_team.color_value.1,
+            self.home_team.color_value.2
+        );
         println!(
-            "{}",
-            format!(
-                "{:^16}@{:^16}{:^5} - {:^5}\t{:^9}",
-                &self.away_team.name[..].on_truecolor(
-                    self.away_team.color_value.0,
-                    self.away_team.color_value.1,
-                    self.away_team.color_value.2
-                ),
-                &self.home_team.name[..].on_truecolor(
-                    self.home_team.color_value.0,
-                    self.home_team.color_value.1,
-                    self.home_team.color_value.2
-                ),
-                self.away_team.score,
-                self.home_team.score,
-                self.game_time
-            )
+            "{}@{}{:^5} - {:^5}\t{:^9}",
+            away_colored,
+            home_colored,
+            self.away_team.score,
+            self.home_team.score,
+            self.game_time
         );
         // if game has started, then print the stat leaders
     }

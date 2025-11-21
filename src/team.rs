@@ -45,6 +45,21 @@ impl Default for Team {
 }
 
 impl Team {
+    pub fn new(name: String, score: u32) -> Team {
+        let color_value = TEAM_COLORS.get(&name[..]).copied().unwrap_or((255, 255, 255));
+        Team {
+            name,
+            score,
+            points_leader: String::new(),
+            points_leader_value: 0,
+            rebounds_leader: String::new(),
+            rebounds_leader_value: 0,
+            assists_leader: String::new(),
+            assists_leader_value: 0,
+            color_value
+        }
+    }
+
     pub fn from_leader_vector(name: String, score: u32,
                           leader_names: Vec<String>, leader_values: Vec<u32>) -> Team {
         // create team from vectors of team leaders and values
